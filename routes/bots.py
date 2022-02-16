@@ -3,7 +3,6 @@ from datetime import timedelta
 
 from routes.utility.fee_per_trade import  OBTFeePerTrade
 from routes.utility.ob_token import  get_price_in_usd
-from routes.utility.solana_api import SolanaApi
 
 from routes.utility.token import OBToken
 from .logging import RotatingFanoutHandler
@@ -191,12 +190,6 @@ class CreateBot(Route):
 
         bot['enabled'] = False
         bot['stop_time'] = time.time()
-        nft_token_address=bot.get('nft_token',{}).get('address')
-        if nft_token_address:
-            all_locked_nft_addresses = self.dbs['globals'].get('nft_bot:addresses',{})
-            if all_locked_nft_addresses.get(nft_token_address):
-                del all_locked_nft_addresses[nft_token_address]
-                self.dbs['globals']['nft_bot:addresses']  = all_locked_nft_addresses
 
         self.dbs['bots'][uid] = bot
 
@@ -216,14 +209,11 @@ class CreateBot(Route):
         ml_boost = req.media.get('ml_boost', False)
         stop_loss = req.media.get('stop_loss', None)
         nickname = req.media.get('nickname', None)
-        nft_token_address = req.media.get('nft_token_address',False)
         # limit of active bot count
         profile = self.get_profile(req).unwrap()
         acl = ACLManager(self.dbs)
         policy: SubscriptionPolicy = acl.find_policy(SubscriptionPolicy._key, profile)
         # TODO: check max_balance_allowed
-
-        addtional_data = {}
 
         if stop_loss:
             stop_loss['starting_portfolio'] = balance
@@ -234,26 +224,11 @@ class CreateBot(Route):
         #     return
 
         bot_count = sum(bool(self.dbs['bots'][b]['enabled']) for b in profile['bots'])
-        all_locked_nft_addresses = self.dbs['globals'].get('nft_bot:addresses',{})
         allowed_bots = policy.allowed_bots
         if policy.sub == SubscriptionFeePerTrade.sub:
             holding_tier = acl.get_current_holding_tier(HoldingTiers._key,profile)
             allowed_bots = holding_tier.get().get('allowed_bots',allowed_bots)
             max_total_in_use = holding_tier.get().get('max_total_in_use',policy.max_total_in_use)
-
-            
-            if nft_token_address:
-                if nft_token_address not in profile.get('obt_token',{}).get('NFT',{}).get('token_address',{}):
-                    resp.status = falcon.HTTP_400
-                    resp.media = {'error':  f'Selected token address {nft_token_address} is not available from your Inventory.', 'code': 'nft-address-not-exitsts'}
-                    return
-
-                if nft_token_address in all_locked_nft_addresses:
-                    resp.status = falcon.HTTP_400
-                    resp.media = {'error':  f'Selected token address {nft_token_address} is used by other bot!', 'code': 'nft-address-lock'}
-                    return
-                addtional_data['nft_token'] = {'address':nft_token_address,'skin':SolanaApi(self.dbs).get_skin(nft_token_address)}
-                
 
         
         assert bot_count + 1 <= allowed_bots, "Failed to create a bot: maximum active bot count reached"
@@ -312,13 +287,9 @@ class CreateBot(Route):
             'billing_start_portfolio': balance,
             'telegram_token': req.media.get('telegram_token', None),
             'telegram_sent_username': req.media.get('telegram_sent_username', None),
-            'twitter_tokens': req.media.get('twitter_tokens', None),
-            **addtional_data
+            'twitter_tokens': req.media.get('twitter_tokens', None)
         }
 
-        if nft_token_address:
-            all_locked_nft_addresses[nft_token_address] = uid
-            self.dbs['globals']['nft_bot:addresses'] = all_locked_nft_addresses
         resp.media = {'success': True, 'uid': uid}
 
     @auth_guard
@@ -451,7 +422,7 @@ class BotVisible(Route):
             return
 
         bot['is_invisible'] = req.media.get('is_invisible', True)
-        self.dbs['bots'].set(key=uid, value=bot)
+        self.dbs['bots'][uid] =bot
         resp.media = {'is_invisible': bot['is_invisible']}
 
 

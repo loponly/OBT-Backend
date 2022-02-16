@@ -1,10 +1,10 @@
+from urllib.parse import urlencode
 import requests
 import logging
 from bs4 import BeautifulSoup
 
 from routes.utility.token import OBToken
-
-
+from tradeEnv.api_adapter import AutoProxy
 
 
 class OBTHoldingRanks:
@@ -18,11 +18,11 @@ class OBTHoldingRanks:
         '0x3c2ec339bd9ba87c54454f819faf82a9b0c9ae44',
         '0x846f2aa2e0bc8796d0df698abf0674242a7302f8'
     }
-    
+    base_url ='https://bscscan.com/token/generic-tokenholders2'
     def __init__(self,dbs) -> None:
         self.dbs = dbs
 
-    def get_ranks(self,page=1):
+    def get_ranks(self,page=1,use_proxy=True):
         headers = {
             'Referer': f'https://bscscan.com/token/{self.token}',
             'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36',
@@ -35,8 +35,12 @@ class OBTHoldingRanks:
             "p": page,
         }
 
-        response = requests.get(
-            "https://bscscan.com/token/generic-tokenholders2", headers=headers, params=params)
+        if use_proxy:
+            proxy = AutoProxy(1200,60)
+            response = proxy.request(method='GET',url=f'{self.base_url}?'+ urlencode(params),headers=headers)
+        else:
+            response = requests.get(
+                self.base_url, headers=headers, params=params)
 
         element = BeautifulSoup(response.content,"html.parser")
 

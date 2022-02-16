@@ -28,3 +28,4 @@ evosim
 *.log
 public
 .pytest_cache
+.vscode

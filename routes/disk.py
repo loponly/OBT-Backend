@@ -90,7 +90,8 @@ class DillDisk(Disk):
 
 class DillCache(Cache):
     def __init__(self, *args, **kwargs):
-        super().__init__(*args, disk=DillDisk, sqlite_synchronous=2, **kwargs)
+        kwargs = {**kwargs, 'disk': DillDisk, 'sqlite_synchronous': 2}
+        super().__init__(*args, **kwargs)
 
     # TODO: force_unlock with boot check?
 

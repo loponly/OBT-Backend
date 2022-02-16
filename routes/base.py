@@ -86,17 +86,6 @@ def auth_guard(func):
             return func(self, req, resp)
     return _auth_guard
 
-def email_validation_auth_guard(func):
-    def _auth_guard(self, req, resp):
-        _res = self.get_profile(req)
-        if _res.is_err():
-            return self.err_as_resp(_res, resp)
-        profile = _res.ok()
-        if profile.get('email_validation'):
-            return self.err_as_resp(Err('Verfiy your email!'),resp)
-        return func(self, req, resp)
-    return _auth_guard
-
 
 class Route:
     def __init__(self, dbs: dict):
@@ -123,11 +112,12 @@ class Route:
 
         token = req.auth
         username = self.dbs['auth'][token]
-        self.dbs['users'](username, lambda user: self.set_last_active(user))
-        self.dbs['auth'].touch(token, expire=24 * 60 * 60)
-
-    def set_last_active(self, user):
-        user['last_active'] = int(time.time())
+        user = self.dbs['users'][username]
+        # Only update if last activity was a while ago
+        if time.time() - user.get('last_active', 0) > 3 * 60:
+            user['last_active'] = int(time.time())
+            self.dbs['users'][username] = user
+            self.dbs['auth'].touch(token, expire=24 * 60 * 60)
 
     def get_username(self, req) -> Result[str, str]:
         token = self.get_auth(req)

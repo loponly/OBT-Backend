@@ -104,9 +104,9 @@ def boot_checks():
     # Adding ReferralTiers 
     aclm.add_acl(
         [   
-            NFTTiers(sub='init',allowed_bots=0, skin_names=[],discount_pct=0),
-            NFTTiers(sub='common',allowed_bots=1, skin_names=['classical','iron','emerald'],discount_pct=0.1),
-            NFTTiers(sub='uncommon',allowed_bots=2, skin_names=['frosty','bronze','amethyst'],discount_pct=0.2),
+            NFTTiers(sub='init',allowed_bots=0, skin_names=[]),
+            NFTTiers(sub='common',allowed_bots=1, skin_names=['classical','iron','emerald','diamond']),
+            NFTTiers(sub='uncommon',allowed_bots=2, skin_names=['frosty','bronze','amethyst']),
         ],key=NFTTiers._key,force=False
     )
     # Generate wallets if not exists

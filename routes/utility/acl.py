@@ -4,7 +4,6 @@ from typing import *
 
 from routes.policy import HoldingTiers, NFTTiers, SubscriptionFeePerTrade, SubscriptionPolicy, Policy
 from routes.utility.solana_api import SolanaApi
-from routes.utils import memorize
 
 
 class ACLManager:
@@ -80,16 +79,19 @@ class ACLManager:
         
         return current_tier
 
-    @memorize
     def get_skins_tier(self,token_addresses:dict):
+
         _return = {}
         if not token_addresses:
             return _return
         for d in token_addresses:
-            _name = SolanaApi(self.dbs).get_skin(d)
-            if _name:    
-                _return[d] = {'name':_name,'tier':self.get_current_nft_tier(_name).get()}
-                
+            token_info = SolanaApi(self.dbs).get_token_info(d)
+            if token_info:
+                _name = token_info.get('attributes',[{}])[-1].get('value','')
+                if _name:
+                    _name = ' '.join(_name.split(' ')[:-1]).lower()
+                    _return[d] = {'name':_name,'tier':self.get_current_nft_tier(_name).get()}
+
         return _return
 
 

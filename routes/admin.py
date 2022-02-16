@@ -1,4 +1,3 @@
-from functools import reduce
 import re
 from falcon.status_codes import HTTP_500
 
@@ -286,9 +285,6 @@ class AdminPromotingOrderReq(BaseModel):
 class AdminPromotingOrderPostResp(BaseModel):
     success: bool = True
 
-
-class AdminNFTUsersReq(BaseModel):
-    username: str 
 # Models end
 
 
@@ -423,7 +419,7 @@ class AdminUsers(Route):
             user['time_added'] = profile.get('time_added', 0)
             user['last_active'] = int(time.time()) - profile.get('last_active', 0)
             user['subscription'] = um.get_policy(email).sub
-            user['no_NFT_tokens'] = len(profile.get('obt_token',{}).get("NFT",{}).get('token_address',[]))
+            user['no_NFT_tokens'] = len(list(filter(lambda _a: _a in self.dbs['nft_token_bots'], profile.get('obt_token',{}).get("NFT",{}).get('token_address',[]))))
             result.append(user)
 
         resp.media = result
@@ -1051,38 +1047,6 @@ class AdminStats(Route):
     @spectree.validate(resp=Response(HTTP_200=AdminStatsGetResp))
     def on_get(self, req, resp):
         resp.media = get_stats(self.dbs['globals'])
-
-
-
-class AdminNFTUsers(Route):
-    
-    @pfs_encrypted
-    @spectree.validate(query=AdminNFTUsersReq)
-    def on_get(self, req, resp):
-        _return = {}
-        u = req.params.get('username', None)
-
-        profile = self.dbs['users'][u]
-        if not profile.get('obt_token',{}).get("NFT",{}).get('token_address'):
-            resp.media= {'error':'No nft addresses!'}
-            resp.status = falcon.HTTP_400
-            return
-
-        sol = SolanaApi(self.dbs)
-        token_addresses =profile['obt_token']["NFT"].get('token_address')
-        skin_tier = ACLManager(self.dbs).get_skins_tier(token_addresses)
-    
-        token_infos = sol.get_all_token_infos(token_addresses,skin_tier)
-
-        resp.media= { 
-                    'NFT_token_bots':token_infos,
-                    'NFT_select_bot_images':profile.get('obt_token',{}).get('NFT',{}).get('token_images',{}),
-                    'owner_address':profile['obt_token']["NFT"]['address'],
-                    'wallet_type':profile['obt_token']["NFT"].get('wallet_type'),
-                    'total_bots_allowed':reduce(lambda p,d: p+ skin_tier[d].get('tier',{}).get('allowed_bots',0),skin_tier,0)
-        }
-
-        resp.media = _return
 
 
 class AdminLogs(Route):

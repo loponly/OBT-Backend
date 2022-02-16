@@ -54,7 +54,7 @@ db_names = ['globals', 'strats', 'auth', 'ttl', 'users', 'bots', 'minimum_orders
             'models', 'cache', 'token_transactions','nft_token_bots']
 
 global_db = 'globals'
-base_db_path = 'store/db/'
+base_db_path = os.environ.get('DB_ROOT', 'store/db/')
 
 
 def get_db_path(name):

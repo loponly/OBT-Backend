@@ -6,6 +6,7 @@ from hashlib import blake2b
 from base64 import b64encode
 from functools import wraps
 
+
 def assert_type(x, t, m):
     if type(t) == tuple:
         assert type(x) in t, "'%s' needs to be %s (is %s)" % (
@@ -37,6 +38,7 @@ def editable_keys(x): return list(
     filter(lambda k: '__' not in k and type(x[k]) in [dict, str, list], x)
 )
 
+
 def getr(d: dict, k: str, default=None):
     """
     Gets item at d[k.split('.')[0]][d.split('.')[1]][...etc], returning the default if it does not existis 
@@ -47,10 +49,11 @@ def getr(d: dict, k: str, default=None):
     if len(path) > 1:
         if path[0] not in d:
             return default
-    
+
         # TODO: check if d[path[0]] is indexable?
         return getr(d[path[0]], '.'.join(path[1:]), default)
-    return d.get(k, default) 
+    return d.get(k, default)
+
 
 def applyr(d: dict, k: str, f, default=None):
     """
@@ -81,13 +84,16 @@ def map_dict(f, v: dict):
 
         return dict(map(_expand_args, v.items()))
 
-#. !A || B (Asymetric gate)
-#. only require B if A is set
+# . !A || B (Asymetric gate)
+# . only require B if A is set
+
+
 def imply(a, b): return not a or b
+
 
 def atomic_memoize(db, func, *args, _overwrite=False, _expire=24*60*60, **kwargs):
     cached_f = db.memoize(expire=_expire, tag=func.__name__)(func)
-    cache_key = cached_f.__cache_key__(*args,**kwargs)
+    cache_key = cached_f.__cache_key__(*args, **kwargs)
     processing_key = ('processing',) + cache_key
     if db.get(processing_key):
         res = db.get(cache_key, retry=True)
@@ -110,17 +116,3 @@ def get_short_hash(username: str, salt: bytes = None):
     blk.update(username.encode())
     return b64encode(blk.digest())[0:16].decode()
 
-
-
-
-def memorize(func):
-    @wraps(func)
-    def wrapper(*args,**kwargs):
-        '''
-        param: all objects must include dbs 
-        '''
-        if hasattr(args[0],'dbs'):
-            return atomic_memoize(args[0].dbs['cache'],func,*args, _expire=60*60*72,**kwargs)
-        return func(*args,**kwargs)
-     
-    return wrapper

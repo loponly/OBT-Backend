@@ -57,7 +57,12 @@ class PublicBotStats:
         return {"total_profit": int(total_profit)}
 
     def get_roi_in_period(self, botid, start_ts, end_ts=1e99):
+        if not botid:
+            return 0
         portfolios = self.dbs['bot_portfolios'].get(botid, {})
+        if not portfolios:
+            return 0
+        
         filtered_p = list(filter(lambda x: x >= start_ts and x <= end_ts, list(portfolios)))
         if not filtered_p:
             return 0

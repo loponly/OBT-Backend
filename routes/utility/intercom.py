@@ -63,7 +63,7 @@ class Intercom():
             self.__create_data_atribute(**{'name': k, 'data_type': v, 'description': v.replace('_', ' ')})
 
 
-class OBIntercomDataFeed(Intercom):
+class OBIntercomDataFeed:
 
     custom_attributes = {
         'ob_number_of_exchanges': 'integer',
@@ -79,7 +79,7 @@ class OBIntercomDataFeed(Intercom):
     }
 
     def __init__(self, dbs: dict, token: str = None) -> None:
-        super().__init__(token=token)
+        self.intercom = Intercom(token=token)
         self.dbs = dbs
         self.um = UserManager(dbs)
         self.cache = get_tmp_cache('stats')
@@ -106,7 +106,7 @@ class OBIntercomDataFeed(Intercom):
         if is_created:
             return
         self.dbs['globals']['OBIntercomDataFeed:create_data_atributes'] = True
-        self._create_data_atributes(self.custom_attributes)
+        self.intercom._create_data_atributes(self.custom_attributes)
 
     def feed_data(self):
         last_run = self.dbs['globals'].get('OBIntercomDataFeed:feed_data', 0)
@@ -115,14 +115,14 @@ class OBIntercomDataFeed(Intercom):
             return
         self.dbs['globals']['OBIntercomDataFeed:feed_data'] = now
 
-        contacts = atomic_memoize(self.cache, self.get_all_contacts)
+        contacts = atomic_memoize(self.cache, self.intercom.get_all_contacts)
         for u in contacts:
             _email = u.get('email')
             if not _email:
                 continue
             d = self.__get_user_data(u.get('email'))
             if d and u.get('id'):
-                self.update_contacts(id=u['id'], custom_attributes=d)
+                self.intercom.update_contacts(id=u['id'], custom_attributes=d)
 
     def run(self):
         self.create_data_atributes()

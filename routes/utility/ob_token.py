@@ -11,7 +11,6 @@ from sendgrid.helpers.mail import Mail
 from routes.policy import HoldingTiers, ReferralTiers, SubscriptionFeePerTrade, SubscriptionPolicy
 from routes.utility.acl import ACLManager
 
-
 from .token import OBToken
 from .crypto import CipherAES
 from .sendgrid import sg
@@ -81,6 +80,8 @@ def get_price(dbs,currency:str)->float:
 
 def get_price_in_usd(dbs)->float:
     return get_price(dbs,currency='USDT')
+
+
 class OBTokenTransaction:
     min_transaction_amount = 10*10**18
 
@@ -89,7 +90,6 @@ class OBTokenTransaction:
         contract_addr = os.environ.get('CONTRACT_ADDR', '0xEfCA9db9712A8C4ce987a70Ef7D60c43B5F29a68')
         self.token = OBToken(self.dbs['globals']['wallet:collector'], contract_addr)
         self.logger = logger
-        self.acl = ACLManager(self.dbs)
 
     def get_logger(self):
         if getattr(self, 'logger', None):
@@ -228,29 +228,15 @@ class OBTokenTransaction:
                        })
                 return
 
-    def get_nft_token_discount(self,bot,profile):
-        nft_token = bot.get('nft_token',{})
-        if not nft_token:
-            return 0
-        if nft_token.get('address') not in profile.get('obt_token',{}).get('NFT',{}).get('token_address',{}):
-            nft_token_address=nft_token.get('address')
-            if nft_token_address:
-                all_locked_nft_addresses = self.dbs['globals'].get('nft_bot:addresses',{})
-                if all_locked_nft_addresses.get(nft_token_address):
-                    del all_locked_nft_addresses[nft_token_address]
-                    self.dbs['globals']['nft_bot:addresses']  = all_locked_nft_addresses
-            return 0
-        if nft_token.get('skin'):
-            return self.acl.get_current_nft_tier(nft_token.get('skin')).discount_tier
-        return 0
-
-    def deduct_bot_trade_fee(self, email:str, amount:float,currency:str,bot)->Result:
+    
+    def deduct_bot_trade_fee(self, email:str, amount:float,currency:str)->Result:
         profile = self.dbs['users'][email]
         if profile['payment'].get('policy_id',None) != SubscriptionFeePerTrade.sub:
             return Err('not-allowed-policy_id')
         
+        acl = ACLManager(self.dbs)
 
-        entry = self.acl.get_policy(SubscriptionPolicy._key,SubscriptionFeePerTrade.sub)
+        entry = acl.get_policy(SubscriptionPolicy._key,SubscriptionFeePerTrade.sub)
 
         if not entry:
             return Err(f'No policy {SubscriptionFeePerTrade.sub}.')
@@ -260,10 +246,7 @@ class OBTokenTransaction:
               return Err('Please enable obt_token wallet.')
 
         price = get_price(self.dbs,currency)
-        discount_pct = self.acl.get_current_holding_tier(HoldingTiers._key,profile).discount_pct
-        
-        discount_pct += self.get_nft_token_discount(bot,profile)
-
+        discount_pct = acl.get_current_holding_tier(HoldingTiers._key,profile).discount_pct
         amount = (amount/price)*self.token.token_decimal*entry.pct_per_trade * (1-discount_pct)
         profile['obt_token']['balance'] -= amount
 
@@ -280,13 +263,13 @@ class OBTokenTransaction:
         })
 
         self.dbs['users'][email] = profile
-        self.add_referral_rewards(amount,email)
+        self.add_referral_rewards(amount,email,acl)
         
         return Ok(amount/self.token.token_decimal)
     
-    def add_referral_rewards(self,amount,email):
+    def add_referral_rewards(self,amount,email,acl:ACLManager):
         profile = self.dbs['users'][email]
-        ref_tier_p = self.acl.get_policy(ReferralTiers._key,profile.get('referral_tier_id','init'))
+        ref_tier_p = acl.get_policy(ReferralTiers._key,profile.get('referral_tier_id','init'))
 
         if ref_tier_p.reward_cash_back_pct <= 0 and ref_tier_p.reward_cash_back_pct>1:
             return 

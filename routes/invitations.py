@@ -1,5 +1,4 @@
-from typing import Optional
-from .base import Route, UrlManager, auth_guard
+from .base import Route, UrlManager
 from routes.utility.users import UserManager
 from .utility.sendgrid import sg
 from sendgrid.helpers.mail import Mail, Email, To, Content
@@ -11,8 +10,6 @@ from .profile import Referral, get_referral_code
 from spectree import Response
 from pydantic import BaseModel
 import time
-import smtplib, ssl
-from bs4 import BeautifulSoup
 
 xor_check = lambda x: reduce(lambda y, z: z ^ y, x)
 
@@ -37,7 +34,7 @@ class InvitationsGetMessage(BaseModel):
 
 class InvitationsPostReq(BaseModel):
     token: str
-    password: Optional[str]
+    password: str
 
 class InvitationsPostResp(BaseModel):
     success: bool = True
@@ -91,52 +88,26 @@ class Invitations(Route):
             resp.media = {'valid': False, 'expired': check_xor(bytes.fromhex(token))}
             return
 
-        password = req.media.get('password')
-        if password:
-            UserManager(self.dbs).set_password(email, password)
-
-        assert self.dbs['users'][email], "User does not exist"
-
-        user = self.dbs['users'][email]
-
-        if user.get('email_validation',False):
-            del user['email_validation']
-            self.dbs['users'][email] =user 
-        
+        password = req.media['password']
+        UserManager(self.dbs).set_password(email, password)
+        del self.dbs['invitations'][token]
 
         #.Referrals
+        user = self.dbs['users'][email]
         if user.get('referral', None) and user['referral'] in self.dbs['referrals']:
             referrer = self.dbs['referrals'].get(user['referral'], [])
             referrer.append(Referral(username=email, code=get_referral_code(email), timestamp=time.time(),referral_tier_id=user.get('referral_tier_id','init')))
             self.dbs['referrals'][user['referral']] = referrer
         #;
 
-        del self.dbs['invitations'][token]
         resp.media = {'success': True}
 
     def verify_token(self, token):
         if self.dbs['invitations'].get(token, False):
             return self.dbs['invitations'][token]
 
-class SendValidationEmail(Route):
-
-    @auth_guard
-    def on_post(self, req, resp):
-        profile  = self.get_profile(req).unwrap()
-        email  = self.get_username(req).unwrap()
-       
-        
-        if not profile.get('email_validation',False):
-            resp.status = falcon.HTTP_403
-            resp.media = {'error':'Email is already validated!'}
-            return
-    
-        link = EmailTokenUtilities(self.dbs).build_invitation_link(email)
-        InvitationEmail().send_message(email, link, profile.get('name',''), 'user_invitation', 'Welcome to OB Trader 🚀🤖')
-
-        resp.media = {'success': True}
-
-
+import smtplib, ssl
+from bs4 import BeautifulSoup
 
 class InvitationEmail:
     def __init__(self):

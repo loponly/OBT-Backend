@@ -37,7 +37,7 @@ class OBToken:
 
     def transfer(self, from_address: str, from_address_private_key: bytes, to_address: str, amount: int) -> Result:
         try:
-
+            to_address = self.web3.toChecksumAddress(to_address)
             trx = self.contract_instance.functions.transfer(to_address, int(amount)).buildTransaction({
                 'from':  from_address,
                 'nonce': self.web3.eth.getTransactionCount(from_address)

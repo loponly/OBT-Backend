@@ -84,7 +84,6 @@ class BotStatsModel(BaseModel):
     image: Optional[str]
 
 
-
 class GetBotStatsPostReq(BaseModel):
     uid: str
 
@@ -186,7 +185,7 @@ class GetProfileSummary(Route):
 
 
 class GetBotStats(Route):
-    def _get_stats(self, botid,token_images:dict={},token_address:dict={}):
+    def _get_stats(self, botid, token_images: dict = {}, token_address: dict = {}):
         bot = self.dbs['bots'][botid]
         additional = {}
 
@@ -202,7 +201,7 @@ class GetBotStats(Route):
             all_images_owned = SolanaApi(self.dbs).get_image_urls(token_address)
             _strategy_name = strategy_name.lower().split(' ')[0]
             if all_images_owned:
-                additional['image'] = all_images_owned.get(_strategy_name,{}).get(token_images.get(_strategy_name,''),proto.strategy_image)
+                additional['image'] = all_images_owned.get(_strategy_name, {}).get(token_images.get(_strategy_name, ''), proto.strategy_image)
         except SystemExit:
             raise
         except Exception as e:
@@ -223,8 +222,8 @@ class GetBotStats(Route):
             return {}
 
         profile = self.dbs['users'][bot['user']]
-        token_images = profile.get('obt_token',{}).get('NFT',{}).get('token_images',{})
-        token_address=profile.get('obt_token',{}).get('NFT',{}).get('token_address',{})
+        token_images = profile.get('obt_token', {}).get('NFT', {}).get('token_images', {})
+        token_address = profile.get('obt_token', {}).get('NFT', {}).get('token_address', {})
 
         return {
             'nickname': bot.get('nickname', None),
@@ -238,7 +237,7 @@ class GetBotStats(Route):
             'enabled': bot['enabled'],
             'bah_roi': bot.get('bah_roi', 0),  # TODO: check policy
             'stop_loss': bot.get('stop_loss'),
-             **atomic_memoize(self.dbs['cache'], self._get_stats, botid=botid,token_images=token_images, token_address=token_address, _expire=60*60)
+            **atomic_memoize(self.dbs['cache'], self._get_stats, botid=botid, token_images=token_images, token_address=token_address, _expire=60*60)
         }
 
     @auth_guard
@@ -291,4 +290,3 @@ class GetBotStats(Route):
 
         duration = float((bot['stop_time'] - bot['start_time']) if (bot['stop_time'] or 1e13) < time.time() else time.time() - bot['start_time'])
         return (roi / (round(duration/60/60/24)) if duration/60/60/24 > 0.5 else 0) * 30
-

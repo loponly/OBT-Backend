@@ -68,7 +68,7 @@ def create_api(prod=False):
                 allow_all_methods=True,
                 allow_methods_list=['GET', 'POST', 'DELETE', 'PUT'])
     else:
-        cors = CORS(allow_origins_list=['https://onebutton.trade', 'https://www.onebutton.trade'], allow_all_headers=True, allow_all_methods=True)
+        cors = CORS(allow_origins_list=['https://onebutton.trade', 'https://www.onebutton.trade', 'https://script.google.com', 'https://n-7dddh4ljwfpdbze6k4drdy5xyg2iovnh7fy7bby-0lu-script.googleusercontent.com/'], allow_all_headers=True, allow_all_methods=True)
 
     sentry_sdk.init(
         dsn="https://fa4f055b782f4310ba4503439e6570f2@o494993.ingest.sentry.io/5567001",
@@ -113,6 +113,7 @@ def create_api(prod=False):
     api.add_route('/api/v1/mailingpreferences', MailingPreferences(dbs))
     api.add_route('/api/v1/publicstrategies', PublicStrategies(dbs))
     api.add_route('/api/v1/publicsroi', PublicROI(dbs))
+    api.add_route('/api/v1/highestroi', HighestROI(dbs))
     api.add_route('/api/v1/profileprofit', ProfileProfit(dbs))
     api.add_route('/api/v1/listbots', GetBotsCategorized(dbs))
     api.add_route('/api/v1/botvisible', BotVisible(dbs))
@@ -136,7 +137,6 @@ def create_api(prod=False):
     api.add_route('/api/v1/login/checkotp', CheckAutheticationOTP(dbs))
     api.add_route('/api/v1/forgotpassword', ForgotPassword(dbs))
     api.add_route('/api/v1/resetpassword', ResetPassword(dbs))
-    api.add_route('/api/v1/validationemail', SendValidationEmail(dbs))
 
     api.add_route('/api/v1/admin/auth', MetaAuth(dbs))
     api.add_route('/api/v1/admin/info', AdminInfo(dbs))
@@ -166,7 +166,6 @@ def create_api(prod=False):
     # api.add_route('/api/v1/admin/adminobtearning', AdminOBTEarningAnalytics(dbs))
     api.add_route('/api/v1/admin/disableotp', AdminDisable2FA(dbs))
     api.add_route('/api/v1/admin/referral', AdminReferral(dbs))
-    api.add_route('/api/v1/admin/nftusers', AdminNFTUsers(dbs))
 
     api.add_route('/api/v1/users/changename', UserChangeName(dbs))
     api.add_route('/api/v1/users/changepassword', UserChangePassword(dbs))

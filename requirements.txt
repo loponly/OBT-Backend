@@ -4,13 +4,9 @@ setproctitle==1.2.2
 jsonpath2==0.4.4
 numpy==1.18.1
 falcon==3.0.0a3
-tensorboardX==2.0
-empyrical==0.5.5
-scipy==1.7.1
 gunicorn==20.1.0
 matplotlib==3.1.2
-diskcache==5.2.1
-gym==0.17.0
+diskcache==5.4.0
 zstd==1.4.5.1
 dill==0.3.2
 pyaxo-ng==1.0.1

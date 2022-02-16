@@ -12,7 +12,7 @@ import base64
 def encode_base(data:str):
     return base64.b64encode(data.encode()).decode()
 
-def decoded_base(hash_data:bytes):
+def decoded_base(hash_data:str):
     return base64.b64decode(hash_data).decode()
 
 class Referral(BaseModel):

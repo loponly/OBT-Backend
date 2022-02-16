@@ -1,4 +1,3 @@
-import gym
 import numpy as np
 import torch
 from matplotlib.figure import Figure
@@ -13,9 +12,8 @@ from .api_adapter import ApiAdapter, binance_map
 from .maths import meandev_norm, symmetric_log, symmetric_exp, eps, safeVal
 from empyrical import sortino_ratio, sharpe_ratio, max_drawdown
 
-class SimuGym(gym.Env):
+class SimuGym:
     def __init__(self, markets=['LTC:USDT'], candleSizes=['4h'], data_version=1, max_steps=1000, skip_frames=0, discount_factor=0.999, fee=0.9975, perception_window=None, is_tanh=True, device=None):
-        super().__init__()
         self.envs = []
         for market in markets:
             for candleSize in candleSizes:

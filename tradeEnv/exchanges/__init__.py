@@ -1,17 +1,13 @@
 import logging
-
 from result import Ok, Err, Result
-
-from typing import Dict,  Type, Union, Tuple, Optional
+from typing import * 
 from typing_extensions import Literal
 from pydantic import BaseModel, conlist, constr, validate_arguments
 from tradeEnv.meta import create_deco_meta
 from tradeEnv.api_adapter import Order
-
-
+import uuid
 
 pydanticMeta = create_deco_meta([validate_arguments])
-
 
 StrDict = Dict[str, str]
 SignedReq = Tuple[str, str, StrDict]
@@ -64,3 +60,8 @@ class AbstractTradeAPI(metaclass=pydanticMeta):
     def update_ohlc(self,       market: str, candle_type: CandleType, start_time: IntIsh) -> Result[RawCandleDataType, str]: pass
     def filters(self) -> Dict[str, TradeFilterData]: pass
     def market_prices(self) -> PriceDict: pass
+    @property
+    def clientOrderId(self)->str:
+        if self._map.get('apiAgentCode'):
+            return f"X-{self._map['apiAgentCode']}-{str(uuid.uuid4().hex[:16])}"
+        return str(uuid.uuid4().hex[:16])

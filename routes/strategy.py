@@ -116,7 +116,7 @@ class AvailableStrategies(Route):
             profile = self.dbs['users'][user]
             nft_images = SolanaApi(self.dbs).get_image_urls(profile.get('obt_token',{}).get('NFT',{}).get('token_address',{}))
             user_selected_images = profile.get('obt_token',{}).get('NFT',{}).get('token_images',{})
-            
+
         def __get_avg_market_roi(k,pairs):
             _return,_temp = {},{}
             for pair in pairs:
@@ -130,7 +130,7 @@ class AvailableStrategies(Route):
                 _return[pair] = sum(_temp[b])/len(_temp[b])
             
             return _return
-
+            
         proto_strats = [
             {
                 "name": getattr(strats[k], "title", k),

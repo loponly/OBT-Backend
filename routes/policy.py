@@ -1,9 +1,9 @@
 import stripe
 from pydantic import BaseModel
-from typing import Dict, List,Optional
+from typing import Dict, List
 from routes.utility.token import OBToken
 from routes.utils import imply
-from result import Result,Ok,Err
+from result import Result, Ok, Err
 
 
 class Policy(BaseModel):
@@ -20,28 +20,24 @@ class SubscriptionFeePerTrade():
     sub = "🪐 Pay As You Go"
 
     pct_per_trade: float = 0.0005
-    min_amount_trade: float = 100*10**18
-    notice_duration_in_sec: int = 60*60*24*2
-    
+    min_amount_trade: float = 100 * 10**18
+    notice_duration_in_sec: int = 60 * 60 * 24 * 2
 
-
-    def __init__(self,dbs) -> None:
+    def __init__(self, dbs) -> None:
         self.dbs = dbs
-        self.mapper = {
-            self.sub:self.upgrade,
-            'Free':self.downgrade
-        }
+        self.mapper = {self.sub: self.upgrade, 'Free': self.downgrade}
 
-    def upgrade(self,username:str,use_obt:bool,entry)->Result:
+    def upgrade(self, username: str, use_obt: bool, entry) -> Result:
 
         if not use_obt:
             return Err("Subscription could not be processed")
-  
-        
+
         profile = self.dbs['users'][username]
 
-        if profile.get("obt_token",{}).get("balance",0) <= entry.min_amount_trade:
-            return Err(f"Not enough funds to start this subscription. Requires at least of {entry.min_amount_trade//OBToken.token_decimal} {OBToken.symbol}")
+        if profile.get("obt_token", {}).get("balance", 0) <= entry.min_amount_trade:
+            return Err(
+                f"Not enough funds to start this subscription. Requires at least of {entry.min_amount_trade//OBToken.token_decimal} {OBToken.symbol}"
+            )
 
         profile['payment']['policy_id'] = entry.sub
         profile['payment']['payment_type'] = 'OBT'
@@ -58,17 +54,18 @@ class SubscriptionFeePerTrade():
 
         return Ok(entry.sub)
 
-    def downgrade(self,username:str,use_obt:bool,entry)->Result:
-            
+    def downgrade(self, username: str, use_obt: bool, entry) -> Result:
+
         profile = self.dbs['users'][username]
         profile['payment']['policy_id'] = 'Free'
         if profile['payment'].get('subscription_id'):
             del profile['payment']['subscription_id']
 
-        
         self.dbs['users'][username] = profile
 
         return Ok('Free')
+
+
 class SubscriptionPolicy(Policy):
     _key = "policy:sub"
 
@@ -109,9 +106,11 @@ class SubscriptionPolicy(Policy):
         return data
 
     def validate(self, element) -> bool:
-        return (imply(self.payments, element['payment'].get('subscription_id', False) and element['payment'].get('policy_id', '🚀 To The Moon') == self.sub)
-                and imply(self.free_pro, element['payment'].get('policy_id', 'Free') == self.sub)
-                and imply(getattr(self, 'pre_date', 0) > 0, element.get('time_added', 1e13) < getattr(self, 'pre_date', 0)))
+        return (imply(self.payments, element['payment'].get('subscription_id', False) 
+                and element['payment'].get('policy_id', '🚀 To The Moon') == self.sub)
+            and imply(self.free_pro, element['payment'].get('policy_id', 'Free') == self.sub) 
+            and imply(getattr(self, 'pre_date', 0) > 0, element.get('time_added', 1e13) < getattr(self, 'pre_date', 0)))
+
 
 class HoldingTiers(Policy):
     _key = "policy:holding_tier"
@@ -129,13 +128,15 @@ class HoldingTiers(Policy):
         return self.dict(exclude={'_key'})
 
     def validate(self, element) -> bool:
-        return element.get('obt_token', {}).get('balance', 0) >= self.required_obt*OBToken.token_decimal
+        return element.get('obt_token', {}).get(
+            'balance', 0) >= self.required_obt * OBToken.token_decimal
+
 
 # extra allowed bots
 class ReferralTiers(Policy):
 
     _key = "policy:referral_tiers"
-    
+
     sub: str
     reward_cash_back_pct: float
     user_split_pct: float
@@ -154,7 +155,6 @@ class NFTTiers(Policy):
     sub:str
     skin_names: List[str]
     allowed_bots: int
-    discount_pct: Optional[float]
     
 
     def get(self) -> dict:

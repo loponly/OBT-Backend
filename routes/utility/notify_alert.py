@@ -115,6 +115,8 @@ class NotifyBinanceAPIExpire(NotifyAlert):
             _expire_date=int(_expire_date)
         except TypeError:
             return
+        except ValueError:
+            return
 
         _days_until_expire = int((int(_expire_date)-datetime.now()).days)
         if not _days_until_expire in self.__check_days:

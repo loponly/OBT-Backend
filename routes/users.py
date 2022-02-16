@@ -14,7 +14,7 @@ from routes.utility.otp import OTP
 from routes.utility.crypto import CipherAES
 
 from .spectree import spectree
-from .base import Route, auth_guard, email_validation_auth_guard
+from .base import Route, auth_guard
 from routes.utility.users import UserManager
 
 from pydantic import BaseModel, constr
@@ -157,7 +157,7 @@ class DeleteUser(Route):
 
 
 class TokenBalance(Route):
-    @email_validation_auth_guard
+    @auth_guard
     def on_get(self, req, resp):
         username = self.get_username(req).unwrap()
         profile = self.dbs['users'][username]
@@ -182,7 +182,7 @@ class TokenBalance(Route):
 
 class TokenTransaction(Route):
 
-    @email_validation_auth_guard
+    @auth_guard
     def on_get(self, req, resp):
         username = self.get_username(req).unwrap()
         profile = self.dbs['users'][username]
@@ -200,8 +200,7 @@ class TokenTransaction(Route):
 
 
 class RequestWithdraw(Route):
-
-    @email_validation_auth_guard
+    @auth_guard
     @spectree.validate(json=RequestWithdrawReq)
     def on_post(self, req, resp):
         username = self.get_username(req).unwrap()
@@ -261,7 +260,7 @@ class RequestWithdraw(Route):
 
 class EstimateFee(Route):
 
-    @email_validation_auth_guard
+    @auth_guard
     def on_get(self, req, resp):
         obt = OBTokenTransaction(self.dbs)
         resp.media = {
@@ -272,7 +271,7 @@ class EstimateFee(Route):
 
 
 class EnableOTP(Route):
-    @email_validation_auth_guard
+    @auth_guard
     def on_post(self, req, resp):
         username = self.get_username(req).unwrap()
         profile = self.dbs['users'][username]
@@ -287,7 +286,7 @@ class EnableOTP(Route):
         resp.status
         return
 
-    @email_validation_auth_guard
+    @auth_guard
     @spectree.validate(json=EnableOTPReq)
     def on_put(self, req, resp):
         username = self.get_username(req).unwrap()
@@ -322,7 +321,7 @@ class EnableOTP(Route):
         resp.media = {'error': 'Worng OTP code!'}
         resp.status = falcon.HTTP_200
 
-    @email_validation_auth_guard
+    @auth_guard
     def on_get(self, req, resp):
         username = self.get_username(req).unwrap()
         profile = self.dbs['users'][username]
@@ -339,7 +338,7 @@ class OTPQuestions(Route):
     def __init__(self, dbs: dict):
         super().__init__(dbs)
 
-    @email_validation_auth_guard
+    @auth_guard
     def on_get(self, req, resp):
         username = self.get_username(req).unwrap()
         profile = self.dbs['users'][username]

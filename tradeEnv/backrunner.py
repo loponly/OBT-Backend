@@ -3,7 +3,7 @@ import os
 from .strategy import Strategy
 from .metrics import *
 from .maths import safeVal
-from empyrical import sortino_ratio, sharpe_ratio, max_drawdown
+from .metrics_ratios import sterling_ratio, v2_ratio, max_drawdown
 import json
 import traceback
 
@@ -115,7 +115,7 @@ class Runner:
         self.metric_log['stats']['win_rate'] = safeVal(float(len(frac_diff > 0) / len(frac_diff)))
 
         self.metric_log['stats']['mdd'] = max_drawdown(frac_diff)
-        self.metric_log['stats']['shapre'] = sharpe_ratio(frac_diff)
-        self.metric_log['stats']['sortino'] = sortino_ratio(frac_diff)
+        self.metric_log['stats']['v2'] = v2_ratio(frac_diff, np.full_like(frac_diff, 8e-4))
+        self.metric_log['stats']['sterling'] = sterling_ratio(frac_diff)
         # print('buys: %.3f (total %d), sells: %.3f (total %d)' % (np.mean(ametrics['buys']), np.sum(ametrics['buys']), np.mean(ametrics['sells']), np.sum(ametrics['sells'])))
         # print('%s: %.3f, %s: %.3f, avg %.3f dev %.3f, max %.3f min %.3f' % (market.split(':')[0], np.mean(ametrics['tokBalance']), market.split(':')[1], np.mean(ametrics['curBalance']), np.mean(ametrics['portfolioVal']), np.std(ametrics['portfolioVal']), np.mean(ametrics['maxBalance']), np.mean(ametrics['minBalance'])))

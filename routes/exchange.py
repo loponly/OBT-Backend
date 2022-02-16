@@ -99,6 +99,7 @@ class Exchange:
                 _operation[operation](m)
             exchange['pairs'] = list(pairs)
             self.dbs['exchanges'][exchange_name] = exchange
+            # TODO: do operation after finishing initial download
             self.dbs['globals']['RealTimeEvl:is_reload_env'] = True
 
             return Ok(pairs)

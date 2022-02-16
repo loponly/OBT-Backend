@@ -23,7 +23,6 @@ class RequestsPostReq(BaseModel):
     name: Optional[str]
     maillist: Optional[bool]
     referral: Optional[constr(max_length=64)]
-    password: Optional[str]
 
 class RequestsPostResp(BaseModel):
     success: bool = True
@@ -68,15 +67,13 @@ sentry_logger.addHandler(sentry_logging._handler)
 sentry_logger.addHandler(sentry_logging._breadcrumb_handler)
 
 class Requests(Route):
-
     @spectree.validate(json=RequestsPostReq, resp=Response(HTTP_200=RequestsPostResp))
     def on_post(self, req, resp):
         email = req.media['email'].strip().lower()
         name = req.media.get('name', 'Anonymous').strip()
         maillist = req.media.get('maillist', True)
         referral = req.media.get('referral', None)
-        password = req.media.get('password')
-        referral_tier_id = decoded_base(req.media.get('referral_tier_id','')).strip()
+        referral_tier_id = decoded_base(req.media.get('referral_tier_id','')).strip() if req.media.get('referral_tier_id','') != None else None
         extra_data = {}
         if referral:
             referral = referral.strip()
@@ -89,25 +86,15 @@ class Requests(Route):
         
         if referral_tier_id not in ACLManager(self.dbs).get_acl_keys(ReferralTiers._key):
             referral_tier_id = 'init'
-            
+
         extra_data['referral_tier_id'] = referral_tier_id
-        
+
+        link = EmailTokenUtilities(self.dbs).build_invitation_link(email)
+        InvitationEmail().send_message(email, link, name, 'user_invitation', 'Welcome to OB Trader 🚀🤖')
         
         user_manager = UserManager(self.dbs)
-
-        if password:
-            extra_data['email_validation'] = True
-
         user_manager.create_user(email, '', name, data=extra_data)
 
-
-        if password:
-            user_manager.set_password(email, password)
-        else:
-            link = EmailTokenUtilities(self.dbs).build_invitation_link(email)
-            InvitationEmail().send_message(email, link, name, 'user_invitation', 'Welcome to OB Trader 🚀🤖')
-        
-        
         if maillist:
             try:
                 data = {'contacts': [{

@@ -4,7 +4,6 @@ import datetime
 from hashlib import blake2b
 from functools import partial
 from typing import *
-from routes.db import get_strategy_map
 
 from routes.utils import get_short_hash
 from routes.policy import SubscriptionPolicy

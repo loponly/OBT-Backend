@@ -8,7 +8,7 @@ from functools import reduce
 from routes.utility.ob_token import  OBToken, get_price_in_usd
 
 from .spectree import spectree
-from .base import Route, auth_guard, email_validation_auth_guard
+from .base import Route, auth_guard
 from routes.utility.users import UserManager
 
 from pydantic import BaseModel, constr
@@ -34,7 +34,7 @@ globals|nft:free_mints -> Optional[Dict[str,str]]
 """
 
 class NFTLoyality(Route):
-    @email_validation_auth_guard
+    @auth_guard
     def on_post(self, req, resp):
         username = self.get_username(req).unwrap()
         profile = self.dbs['users'][username]
@@ -45,7 +45,7 @@ class NFTLoyality(Route):
 
 
 class NFTWhitelist(Route):
-    @email_validation_auth_guard
+    @auth_guard
     def on_get(self, req, resp):
         username = self.get_username(req).unwrap()
         profile = self.dbs['users'][username]
@@ -135,7 +135,7 @@ class NFTWhitelist(Route):
 
 class NFTBotsTokenNetworkRestart(Route):
 
-    @email_validation_auth_guard
+    @auth_guard
     def on_post(self, req, resp):
         username = self.get_username(req).unwrap()
         resp.media = 'Refreshed!'
@@ -147,7 +147,7 @@ class NFTBotsTokenNetworkRestart(Route):
 class NFTBotsToken(Route):
 
     
-    @email_validation_auth_guard
+    @auth_guard
     @spectree.validate(json=NFTBotsReq)
     def on_post(self, req, resp):
         username = self.get_username(req).unwrap()
@@ -175,7 +175,7 @@ class NFTBotsToken(Route):
         self.dbs['users'][username] = profile
         resp.media =  profile['obt_token']['NFT']
 
-    @email_validation_auth_guard
+    @auth_guard
     def on_get(self, req, resp):
         username = self.get_username(req).unwrap()
         profile = self.dbs['users'][username]
@@ -210,7 +210,7 @@ class NFTBotsToken(Route):
                         'total_bots_allowed':reduce(lambda p,d: p+ skin_tier[d].get('tier',{}).get('allowed_bots',0),skin_tier,0)
                         }
 
-    @email_validation_auth_guard
+    @auth_guard
     @spectree.validate(json=NFTBotImageSelectReq)
     def on_put(self, req, resp):
         username = self.get_username(req).unwrap()
@@ -253,7 +253,7 @@ class NFTBotsToken(Route):
 
         resp.media = {'NFT_select_bot_images':profile['obt_token']['NFT']['token_images']}
 
-    @email_validation_auth_guard
+    @auth_guard
     def on_delete(self, req, resp):
         username = self.get_username(req).unwrap()
         profile = self.dbs['users'][username]
