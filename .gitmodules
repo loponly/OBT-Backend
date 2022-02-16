@@ -1,0 +1,6 @@
+[submodule "evosim"]
+	path = evosim
+	url = git@github.com:/ob-trading/ModelZoo
+[submodule "portable_es/portable-es"]
+	path = portable_es/portable-es
+	url = https://github.com/ob-trading/portable-es
